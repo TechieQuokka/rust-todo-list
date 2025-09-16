@@ -47,4 +47,16 @@ impl Todo {
     self.title = title;
     self.updated_at = Utc::now();
   }
+
+  pub fn set_priority(&mut self, priority: Priority) {
+
+    self.priority = priority;
+    self.updated_at = Utc::now();
+  }
+
+  pub fn toggle_complete(&mut self) {
+
+    self.completed = !self.completed;
+    self.updated_at = Utc::now();
+  }
 }

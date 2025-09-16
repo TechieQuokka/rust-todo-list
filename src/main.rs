@@ -1,82 +1,53 @@
-use models::todo::{Todo, Priority};
-use storage::{TodoStorage, memory_storage::MemoryStorage, file_storage::FileStorage};
-use std::path::PathBuf;
+use models::{Todo, Priority};
+use storage::{TodoStorage, memory_storage::MemoryStorage};
+use service::TodoService;
 
 mod models;
 mod storage;
+mod service;
 
 fn main() {
-    println!("=== Todo Storage 테스트 시작 ===\n");
+    println!("=== TodoService 테스트 시작 ===\n");
 
-    // 1. MemoryStorage 테스트
-    println!("1. MemoryStorage 테스트");
-    test_memory_storage();
+    // MemoryStorage로 TodoService 테스트
+    let storage = MemoryStorage::new();
+    let mut service = TodoService::new(storage);
 
-    println!("\n{}\n", "=".repeat(50));
+    // 1. Todo 생성 테스트
+    println!("1. Todo 생성 테스트");
+    let todo1 = service.create_todo("Rust 마스터하기".to_string()).unwrap();
+    let todo2 = service.create_todo_with_priority("프로젝트 완성".to_string(), Priority::High).unwrap();
+    
+    println!("생성된 Todo 개수: {}", service.get_todos().unwrap().len());
 
-    // 2. FileStorage 테스트
-    println!("2. FileStorage 테스트");
-    test_file_storage();
-}
+    // 2. 완료 처리 테스트
+    println!("\n2. 완료 처리 테스트");
+    service.complete_todo(&todo1.id).unwrap();
+    
+    let updated_todo = service.get_todo_by_id(&todo1.id).unwrap().unwrap();
+    println!("Todo 완료 상태: {}", updated_todo.completed);
 
-fn test_memory_storage() {
-    let mut storage = MemoryStorage::new();
-    
-    // Todo 생성 및 저장
-    let todo1 = Todo::new("Rust 공부하기".to_string());
-    let todo2 = Todo::new("프로젝트 완성하기".to_string());
-    
-    println!("Todo 저장 중...");
-    storage.save(&todo1).unwrap();
-    storage.save(&todo2).unwrap();
-    
-    // 전체 조회
-    let all_todos = storage.find_all().unwrap();
-    println!("저장된 Todo 개수: {}", all_todos.len());
-    
-    // ID로 조회
-    let found = storage.find_by_id(&todo1.id).unwrap();
-    println!("ID로 찾은 Todo: {:?}", found.is_some());
-    
-    // 삭제
-    let deleted = storage.delete(&todo1.id).unwrap();
-    println!("삭제 성공: {}", deleted);
-    
-    let remaining = storage.find_all().unwrap();
-    println!("삭제 후 남은 Todo 개수: {}", remaining.len());
-}
+    // 3. 토글 테스트
+    println!("\n3. 토글 테스트");
+    service.toggle_todo(&todo1.id).unwrap();
+    let toggled_todo = service.get_todo_by_id(&todo1.id).unwrap().unwrap();
+    println!("토글 후 완료 상태: {}", toggled_todo.completed);
 
-fn test_file_storage() {
-    let file_path = PathBuf::from("test_todos.json");
-    let mut storage = FileStorage::new(file_path);
-    
-    // Todo 생성 및 저장
-    let todo1 = Todo::new("파일 저장 테스트".to_string());
-    let mut todo2 = Todo::new("완료 테스트".to_string());
-    todo2.complete();
-    
-    println!("파일에 Todo 저장 중...");
-    storage.save(&todo1).unwrap();
-    storage.save(&todo2).unwrap();
-    
-    // 파일에서 읽기
-    let all_todos = storage.find_all().unwrap();
-    println!("파일에서 읽은 Todo 개수: {}", all_todos.len());
-    
-    for (i, todo) in all_todos.iter().enumerate() {
-        println!("  {}. {} (완료: {})", i+1, todo.title, todo.completed);
-    }
-    
-    // 업데이트 테스트
-    let mut updated_todo = todo1.clone();
-    updated_todo.update_title("업데이트된 제목".to_string());
-    storage.update(&updated_todo).unwrap();
-    
-    println!("업데이트 후 파일 확인...");
-    let updated_todos = storage.find_all().unwrap();
-    for todo in updated_todos.iter() {
-        if todo.id == todo1.id {
-            println!("업데이트된 제목: {}", todo.title);
-        }
+    // 4. 제목 업데이트 테스트
+    println!("\n4. 제목 업데이트 테스트");
+    service.update_todo_title(&todo2.id, "Rust 전문가 되기".to_string()).unwrap();
+    let updated_title_todo = service.get_todo_by_id(&todo2.id).unwrap().unwrap();
+    println!("업데이트된 제목: {}", updated_title_todo.title);
+
+    // 5. 삭제 테스트
+    println!("\n5. 삭제 테스트");
+    service.delete_todo(&todo1.id).unwrap();
+    println!("삭제 후 Todo 개수: {}", service.get_todos().unwrap().len());
+
+    // 6. 검증 에러 테스트
+    println!("\n6. 검증 에러 테스트");
+    match service.create_todo("".to_string()) {
+        Err(e) => println!("예상된 에러: {:?}", e),
+        Ok(_) => println!("에러가 발생해야 하는데 성공했습니다"),
     }
 }

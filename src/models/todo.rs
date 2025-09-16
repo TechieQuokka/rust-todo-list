@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use std::fmt::{self, write};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Todo {
@@ -58,5 +59,16 @@ impl Todo {
 
     self.completed = !self.completed;
     self.updated_at = Utc::now();
+  }
+}
+
+impl fmt::Display for Priority {
+
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      match self {
+        Priority::Low => write!(f, "Low"),
+        Priority::Medium => write!(f, "Medium"),
+        Priority::High => write!(f, "High"),
+      }
   }
 }

@@ -67,6 +67,7 @@ fn handle_list<S: TodoStorage> (
   for (i, todo) in todos.iter().enumerate() {
     let status = if todo.completed { "O" } else { " " };
     println!("{}. [{}] {} ({})", i + 1, status, todo.title, todo.priority);
+    println!("     ID: {}", todo.id);
   }
 
   Ok(())
